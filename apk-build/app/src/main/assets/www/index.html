@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Popis</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+      padding: 20px 16px 16px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    
+    .header-logo {
+      font-size: 40px;
+      margin-bottom: 4px;
+    }
+    
+    .header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 2px;
+    }
+    
+    .header .subtitle {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-top: 4px;
+    }
+    
+    .progress-bar {
+      background: rgba(255,255,255,0.2);
+      height: 6px;
+      border-radius: 3px;
+      margin: 12px 0 0;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      background: #fff;
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+    
+    .progress-text {
+      font-size: 11px;
+      opacity: 0.9;
+      margin-top: 6px;
+    }
+    
+    .category {
+      margin: 16px 12px 8px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #e74c3c;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .items-list {
+      padding: 0 12px;
+    }
+    
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 12px;
+      background: #16213e;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      transition: all 0.2s;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .item:active {
+      transform: scale(0.98);
+    }
+    
+    .item.checked {
+      background: #0f3460;
+      opacity: 0.5;
+    }
+    
+    .item.checked .item-name {
+      text-decoration: line-through;
+      color: #888;
+    }
+    
+    .checkbox {
+      width: 26px;
+      height: 26px;
+      border: 2px solid #555;
+      border-radius: 6px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    
+    .item.checked .checkbox {
+      background: #27ae60;
+      border-color: #27ae60;
+    }
+    
+    .checkmark {
+      display: none;
+      color: #fff;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    
+    .item.checked .checkmark {
+      display: block;
+    }
+    
+    .item-info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .item-name {
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .item-detail {
+      font-size: 11px;
+      color: #888;
+      margin-top: 2px;
+    }
+    
+    .item-qty {
+      background: rgba(231, 76, 60, 0.2);
+      color: #e74c3c;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    
+    .item.checked .item-qty {
+      background: rgba(39, 174, 96, 0.2);
+      color: #27ae60;
+    }
+    
+    .footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #1a1a2e;
+      border-top: 1px solid #2a2a4e;
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+      z-index: 100;
+    }
+    
+    .footer button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-reset {
+      background: #2a2a4e;
+      color: #eee;
+    }
+    
+    .btn-reset:active {
+      background: #3a3a5e;
+    }
+    
+    .btn-checked-bottom {
+      background: #c0392b;
+      color: #fff;
+    }
+    
+    .btn-checked-bottom:active {
+      background: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-logo">🥩</div>
+    <h1>POPIS</h1>
+    <div class="subtitle">Shopping List</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">0 / 0 picked up</div>
+  </div>
+  
+  <div id="app"></div>
+  
+  <div class="footer">
+    <button class="btn-reset" onclick="resetAll()">🔄 Reset</button>
+    <button class="btn-checked-bottom" onclick="moveChecked()">✅ Move done ↓</button>
+  </div>
+
+  <script>
+    const ITEMS = [
+      // 🧀 Mliječni proizvodi
+      { cat: "🧀 Mliječni proizvodi", name: "Sir Gauda 300g", qty: "1 kom", detail: "SIR POL GAUDA BL 300" },
+      { cat: "🧀 Mliječni proizvodi", name: "Vrhnje za kuhanje 200ml", qty: "2 kom", detail: "VRHNJE ZA KUH 200ml" },
+      { cat: "🧀 Mliječni proizvodi", name: "Zrnati sir bez laktoze", qty: "4 kom", detail: "ZRNATI SIR BEZ LAKTO" },
+      { cat: "🧀 Mliječni proizvodi", name: "Kiselo vrhnje bez lak. 18%", qty: "2 kom", detail: "KIS VRH BEZ LAK 18%" },
+      { cat: "🧀 Mliječni proizvodi", name: "Jogurt grčki 150g", qty: "5 kom", detail: "JOGURT GRČKI 150g" },
+      { cat: "🧀 Mliječni proizvodi", name: "Maslac 250g Dukat", qty: "2 kom", detail: "MASLAC 250G DUKAT" },
+      { cat: "🧀 Mliječni proizvodi", name: "Sir Tilzit 300g", qty: "1 kom", detail: "SIR K PLUS TILZIT 30" },
+      { cat: "🧀 Mliječni proizvodi", name: "Sir Mozzarella 100g", qty: "1 kom", detail: "SIR K PL MOZZAR 100g" },
+      { cat: "🧀 Mliječni proizvodi", name: "Sir polutvdi Podravec", qty: "~0.5 kg", detail: "SIR POLUTV PODRAVEC" },
+      { cat: "🧀 Mliječni proizvodi", name: "Jaja svježa M 10/1", qty: "2 kom", detail: "JAJA SVJ K PL M 10/1" },
+      
+      // 🥩 Meso i riba
+      { cat: "🥩 Meso i riba", name: "Kranjska kobasica 600g", qty: "1 kom", detail: "KOB KRANJ K PL 600g" },
+      { cat: "🥩 Meso i riba", name: "Šunka K Plus u ovitku", qty: "2 kom", detail: "ŠUNKA K PLUS U OVIT" },
+      { cat: "🥩 Meso i riba", name: "Pureća prsa u ovitku", qty: "~0.16 kg", detail: "PRSA PUREĆA U OVITK" },
+      { cat: "🥩 Meso i riba", name: "Pršut narezak 200g", qty: "1 kom", detail: "PRŠUT NAREZAK 200g" },
+      { cat: "🥩 Meso i riba", name: "Šunka Schwarzwald 100g", qty: "2 kom", detail: "ŠUN K PL SCHW 100g" },
+      { cat: "🥩 Meso i riba", name: "Pureći odresci file 400g", qty: "1 kom", detail: "PUR ODRESCI FILE 400" },
+      { cat: "🥩 Meso i riba", name: "Losos norveški Ocean 250g", qty: "1 kom", detail: "LOSOS NOR OCEAN 250" },
+      { cat: "🥩 Meso i riba", name: "Oslić filet 400g Ledo", qty: "1 kom", detail: "OSLIĆ FILET 400g LE" },
+      { cat: "🥩 Meso i riba", name: "Miješano mljeveno 850g", qty: "1 kom", detail: "MIJEŠ MLJEV 850g MA" },
+      
+      // 🥬 Voće i povrće
+      { cat: "🥬 Voće i povrće", name: "Kupus kineski", qty: "1 kom", detail: "KUPUS KINESKI KOM" },
+      { cat: "🥬 Voće i povrće", name: "Paprika zelena", qty: "~0.5 kg", detail: "PAPRIKA ZELENA" },
+      { cat: "🥬 Voće i povrće", name: "Špinat 400g", qty: "1 kom", detail: "ŠPINAT 400G" },
+      { cat: "🥬 Voće i povrće", name: "Patlidžan", qty: "~0.45 kg", detail: "PATLIĐAN" },
+      { cat: "🥬 Voće i povrće", name: "Brokula", qty: "2 kom", detail: "BROKULA KOM" },
+      { cat: "🥬 Voće i povrće", name: "Kupus svježi", qty: "~1.25 kg", detail: "KUPUS SVJEŽI" },
+      { cat: "🥬 Voće i povrće", name: "Celer glava", qty: "~1.2 kg", detail: "CELER GLAVA" },
+      { cat: "🥬 Voće i povrće", name: "Avokado", qty: "3 kom", detail: "AVOKADO" },
+      { cat: "🥬 Voće i povrće", name: "Salata kristal", qty: "1 kom", detail: "SAL KRISTAL KOM" },
+      { cat: "🥬 Voće i povrće", name: "Mrkva", qty: "~0.9 kg", detail: "MRKVA" },
+      { cat: "🥬 Voće i povrće", name: "Tikvice", qty: "~0.55 kg", detail: "TIKVICE" },
+      { cat: "🥬 Voće i povrće", name: "Luk crveni", qty: "~1 kg", detail: "LUK CRVENI" },
+      { cat: "🥬 Voće i povrće", name: "Banana", qty: "~1 kg", detail: "BANANA" },
+      
+      // 🧊 Smrznuto
+      { cat: "🧊 Smrznuto", name: "Špinat 400g Ledo", qty: "1 kom", detail: "ŠPINAT 400g LEDO" },
+      
+      // 🥫 Konzerve i teglice
+      { cat: "🥫 Konzerve i teglice", name: "Lukovice u octu 300g", qty: "1 kom", detail: "LUKOVICE U OCTU 300G" },
+      { cat: "🥫 Konzerve i teglice", name: "Kapari 60g", qty: "1 kom", detail: "KAPARI 60G" },
+      { cat: "🥫 Konzerve i teglice", name: "Masline zelene otk. 165g", qty: "2 kom", detail: "MASLINE ZEL OTK 165G" },
+      { cat: "🥫 Konzerve i teglice", name: "Rajčica pasirana 500g", qty: "1 kom", detail: "RAJČICA PASIR 500g" },
+      { cat: "🥫 Konzerve i teglice", name: "Krastavci kornišoni 350g", qty: "1 kom", detail: "KRASTAVAC KPL 350g" },
+      { cat: "🥫 Konzerve i teglice", name: "Tunjevina Ocean nat. 3x56", qty: "1 kom", detail: "TUNJ OCEAN NAT 3x56" },
+      
+      // 🍪 Grickalice
+      { cat: "🍪 Grickalice", name: "Keto kruh 190g Bahlsen", qty: "2 kom", detail: "KR LO CA BG 190g BAL" },
+      { cat: "🍪 Grickalice", name: "Keksi Choco Cookies", qty: "1 kom", detail: "KEKS CHOCO COOKIES B" },
+      
+      // 🧹 Kućanstvo
+      { cat: "🧹 Kućanstvo", name: "Sapun Daisy M/M 500ml", qty: "1 kom", detail: "SAP T DAISY M/M 500m" },
+      { cat: "🧹 Kućanstvo", name: "Deterdžent Čarli Classic 4", qty: "1 kom", detail: "DET ČARLI CLASSIC 4" },
+    ];
+
+    let checked = JSON.parse(localStorage.getItem('popis_checked') || '{}');
+
+    function render() {
+      const app = document.getElementById('app');
+      let html = '';
+      let currentCat = '';
+      
+      // Sort: unchecked first if moveChecked was used
+      const sorted = [...ITEMS.map((item, i) => ({ ...item, idx: i }))];
+      
+      for (const item of sorted) {
+        if (item.cat !== currentCat) {
+          currentCat = item.cat;
+          html += `<div class="category">${currentCat}</div><div class="items-list">`;
+          if (html.includes('</div><div class="category">')) {
+            html = html.replace(/<div class="items-list">(?=[^]*$)/, '</div><div class="items-list">');
+          }
+        }
+        
+        const isChecked = checked[item.idx] ? 'checked' : '';
+        html += `
+          <div class="item ${isChecked}" onclick="toggle(${item.idx})">
+            <div class="checkbox"><span class="checkmark">✓</span></div>
+            <div class="item-info">
+              <div class="item-name">${item.name}</div>
+              <div class="item-detail">${item.detail}</div>
+            </div>
+            <div class="item-qty">${item.qty}</div>
+          </div>
+        `;
+      }
+      html += '</div>';
+      app.innerHTML = html;
+      updateProgress();
+    }
+
+    function toggle(idx) {
+      if (checked[idx]) delete checked[idx];
+      else checked[idx] = true;
+      localStorage.setItem('popis_checked', JSON.stringify(checked));
+      render();
+    }
+
+    function resetAll() {
+      if (confirm('Reset all items?')) {
+        checked = {};
+        localStorage.setItem('popis_checked', JSON.stringify(checked));
+        render();
+      }
+    }
+
+    function moveChecked() {
+      // Re-render with checked items at bottom
+      const app = document.getElementById('app');
+      let html = '';
+      let currentCat = '';
+      
+      const unchecked = ITEMS.map((item, i) => ({ ...item, idx: i })).filter(i => !checked[i.idx]);
+      const checkedItems = ITEMS.map((item, i) => ({ ...item, idx: i })).filter(i => checked[i.idx]);
+      const all = [...unchecked, ...checkedItems];
+      
+      for (const item of all) {
+        if (item.cat !== currentCat) {
+          currentCat = item.cat;
+          if (html.includes('<div class="items-list">')) html += '</div>';
+          html += `<div class="category">${currentCat}</div><div class="items-list">`;
+        }
+        
+        const isChecked = checked[item.idx] ? 'checked' : '';
+        html += `
+          <div class="item ${isChecked}" onclick="toggle(${item.idx})">
+            <div class="checkbox"><span class="checkmark">✓</span></div>
+            <div class="item-info">
+              <div class="item-name">${item.name}</div>
+              <div class="item-detail">${item.detail}</div>
+            </div>
+            <div class="item-qty">${item.qty}</div>
+          </div>
+        `;
+      }
+      html += '</div>';
+      app.innerHTML = html;
+    }
+
+    function updateProgress() {
+      const total = ITEMS.length;
+      const done = Object.keys(checked).length;
+      const pct = total > 0 ? (done / total * 100) : 0;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressText').textContent = `${done} / ${total} picked up`;
+    }
+
+    render();
+  </script>
+</body>
+</html>

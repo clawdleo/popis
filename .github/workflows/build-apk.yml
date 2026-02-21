@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Android APK
 
 on:
   push:
@@ -8,185 +8,63 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-      
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-      
-      - name: Install Android Build Tools
-        run: sdkmanager "build-tools;34.0.0" "platforms;android-34"
-      
-      - name: Create Android project structure
-        run: |
-          mkdir -p android/app/src/main/assets/www
-          mkdir -p android/app/src/main/res/values
-          mkdir -p android/app/src/main/res/mipmap-hdpi
-          mkdir -p android/app/src/main/res/mipmap-xhdpi
-          mkdir -p android/app/src/main/res/mipmap-xxhdpi
-          
-          # Copy web files
-          cp docs/* android/app/src/main/assets/www/ 2>/dev/null || true
-          
-          # Create AndroidManifest.xml
-          cat > android/app/src/main/AndroidManifest.xml << 'MANIFEST'
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              package="com.popis.app">
-              <uses-permission android:name="android.permission.INTERNET" />
-              <application
-                  android:allowBackup="true"
-                  android:icon="@mipmap/ic_launcher"
-                  android:label="Popis"
-                  android:theme="@style/AppTheme"
-                  android:usesCleartextTraffic="true">
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true"
-                      android:configChanges="orientation|screenSize">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          MANIFEST
-          
-          # Create styles
-          cat > android/app/src/main/res/values/styles.xml << 'STYLES'
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
-                  <item name="android:statusBarColor">#c0392b</item>
-                  <item name="android:navigationBarColor">#1a1a2e</item>
-              </style>
-          </resources>
-          STYLES
-          
-          # Create MainActivity.java
-          mkdir -p android/app/src/main/java/com/popis/app
-          cat > android/app/src/main/java/com/popis/app/MainActivity.java << 'JAVA'
-          package com.popis.app;
-          
-          import android.app.Activity;
-          import android.os.Bundle;
-          import android.webkit.WebView;
-          import android.webkit.WebSettings;
-          import android.webkit.WebViewClient;
-          import android.view.Window;
-          import android.view.WindowManager;
-          
-          public class MainActivity extends Activity {
-              private WebView webView;
-          
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  
-                  webView = new WebView(this);
-                  setContentView(webView);
-                  
-                  WebSettings settings = webView.getSettings();
-                  settings.setJavaScriptEnabled(true);
-                  settings.setDomStorageEnabled(true);
-                  settings.setAllowFileAccess(true);
-                  
-                  webView.setWebViewClient(new WebViewClient());
-                  webView.loadUrl("file:///android_asset/www/index.html");
-              }
-          
-              @Override
-              public void onBackPressed() {
-                  if (webView.canGoBack()) {
-                      webView.goBack();
-                  } else {
-                      super.onBackPressed();
-                  }
-              }
-          }
-          JAVA
-          
-          # Copy icon
-          cp docs/icon-192.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          cp docs/icon-192.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          cp docs/icon-192.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-      
-      - name: Compile APK
-        run: |
-          cd android/app/src/main
-          
-          # Compile Java
-          mkdir -p ../../build/classes
-          javac -source 11 -target 11 \
-            -classpath "$ANDROID_HOME/platforms/android-34/android.jar" \
-            -d ../../build/classes \
-            java/com/popis/app/MainActivity.java
-          
-          # Create DEX
-          mkdir -p ../../build/dex
-          d8 --output ../../build/dex \
-            --lib "$ANDROID_HOME/platforms/android-34/android.jar" \
-            ../../build/classes/com/popis/app/MainActivity.class
-          
-          # Package APK
-          cd ../..
-          aapt2 compile --dir app/src/main/res -o build/resources.zip
-          aapt2 link \
-            -o build/popis-unsigned.apk \
-            -I "$ANDROID_HOME/platforms/android-34/android.jar" \
-            --manifest app/src/main/AndroidManifest.xml \
-            --java build/R \
-            build/resources.zip
-          
-          # Add DEX and assets
-          cd build
-          cp popis-unsigned.apk popis-temp.apk
-          mkdir -p temp && cd temp
-          unzip -o ../popis-temp.apk
-          cp ../dex/classes.dex .
-          mkdir -p assets/www
-          cp -r ../../app/src/main/assets/www/* assets/www/
-          zip -r ../popis-unsigned.apk classes.dex assets/
-          cd ..
-          
-          # Align
-          zipalign -f 4 popis-unsigned.apk popis-aligned.apk
-          
-          # Sign with debug key
-          keytool -genkeypair -v \
-            -keystore debug.keystore \
-            -alias androiddebugkey \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass android -keypass android \
-            -dname "CN=Debug,O=Debug,C=US"
-          
-          apksigner sign \
-            --ks debug.keystore \
-            --ks-key-alias androiddebugkey \
-            --ks-pass pass:android \
-            --key-pass pass:android \
-            --out popis.apk \
-            popis-aligned.apk
-      
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Popis-APK
-          path: android/build/popis.apk
-      
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v1.0.0
-          name: Popis v1.0.0
-          files: android/build/popis.apk
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+        
+    - name: Install Capacitor
+      run: |
+        cd app
+        npm install @capacitor/core @capacitor/cli @capacitor/android
+        
+    - name: Copy static files to dist
+      run: |
+        mkdir -p app/dist
+        cp docs/index.html app/dist/
+        cp docs/manifest.json app/dist/
+        
+    - name: Add Android platform
+      run: |
+        cd app
+        npx cap add android || true
+        
+    - name: Sync Capacitor
+      run: |
+        cd app
+        npx cap sync android
+        
+    - name: Build APK
+      run: |
+        cd app/android
+        chmod +x gradlew
+        ./gradlew assembleDebug
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: popis-apk
+        path: app/android/app/build/outputs/apk/debug/app-debug.apk
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v2.0
+        name: Popis v2.0
+        files: app/android/app/build/outputs/apk/debug/app-debug.apk
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
